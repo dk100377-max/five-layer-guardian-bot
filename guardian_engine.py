@@ -42,7 +42,7 @@ def get_ohlcv(ex, tf, days):
         b = ex.fetch_ohlcv(CFG["SYM"], timeframe=tf, since=since, limit=300)
         if not b: break
         rows.extend(b)
-        since = b[-1] + 1
+        since = b[-1][0] + 1
         time.sleep(0.11)
     return pd.DataFrame(rows, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume']).drop_duplicates('timestamp').sort_values('timestamp').reset_index(drop=True)
 
