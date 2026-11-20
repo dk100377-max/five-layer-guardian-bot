@@ -1,8 +1,8 @@
 {
   "model_name": "System-B (4H+1H Guardian Pro)",
   "capital": 53.29,
-  "current_price": 59465.1,
-  "last_updated": "2026-11-20 16:17 UTC",
+  "current_price": 59410.6,
+  "last_updated": "2026-11-20 16:40 UTC",
   "news_safe": true,
   "news_msg": "宏觀與鏈上新聞安全（無重大突發利空）",
   "regime": "熊市 (Bear)",
@@ -10,15 +10,15 @@
   "pos_type": null,
   "last_signal": "WAIT",
   "plan_dir": "SHORT",
-  "entry_price": 59465.1,
+  "entry_price": 59410.6,
   "sl_price": 63535.36,
-  "tp1_price": 53359.71,
-  "tp2_price": 47254.32,
-  "qty": 0.0002,
-  "margin_used": 3.96,
+  "tp1_price": 53223.46,
+  "tp2_price": 47036.32,
+  "qty": 0.00019,
+  "margin_used": 3.76,
   "recommendations": [
     "近 30 天（720 小時大量數據實測，含剛剛暴跌行情）模擬盤淨值：50.00 U -> 53.29 U",
-    "當前市價 $59,465.10，處於【熊市 (Bear)】，趨勢強度 ADX=49.0",
+    "當前市價 $59,410.60，處於【熊市 (Bear)】，趨勢強度 ADX=49.0",
     "目前狀態：WAIT（若顯示 BUY/SELL 代表剛剛已進場持倉；若顯示 WAIT 請耐心等待）"
   ]
 }
