@@ -1,12 +1,12 @@
 name: Five-Layer Guardian System
 
 on:
-  workflow_dispatch:  # 允許你隨時在網頁一鍵手動啟動
+  workflow_dispatch:
   schedule:
-    - cron: '0 */4 * * *'  # 每 4 小時自動醒來巡檢一次市場與新聞
+    - cron: '0 * * * *'  # 改為每 1 小時整點收盤準時巡檢一次
 
 permissions:
-  contents: write  # 賦予系統「永久記憶權限」，自動把結果與日誌寫回倉庫
+  contents: write
 
 jobs:
   run-system:
@@ -23,7 +23,7 @@ jobs:
       - name: 3. 安裝開源分析套件
         run: pip install -r requirements.txt
 
-      - name: 4. 執行系統 B 決策與競賽引擎
+      - name: 4. 執行系統 B 決策與競賽引擎 (4H+1H 雙週期)
         run: python guardian_engine.py
 
       - name: 5. 寫入永久記憶與交易日誌 (Auto-Save to GitHub)
@@ -31,4 +31,4 @@ jobs:
           git config --global user.name "Guardian-Bot"
           git config --global user.email "bot@://github.com"
           git add -A
-          git diff --quiet && git diff --staged --quiet || (git commit -m "🤖 Auto-save system B memory & report" && git push)
+          git diff --quiet && git diff --staged --quiet || (git commit -m "🤖 Hourly 4H+1H scan & memory save" && git push)
