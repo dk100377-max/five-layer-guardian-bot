@@ -1,16 +1,16 @@
 {
   "system": "System-B (4H+1H Guardian Pro)",
   "initial": 50.0,
-  "final": 65.32,
-  "return_pct": 30.64,
-  "win_rate": 29.1,
-  "trades": 191,
+  "final": 64.95,
+  "return_pct": 29.9,
+  "win_rate": 28.9,
+  "trades": 193,
   "expectancy": -0.32,
   "max_dd": 18.85,
   "bull": {
-    "trades": 109,
-    "win_rate": 33.7,
-    "expectancy": -0.21
+    "trades": 111,
+    "win_rate": 33.3,
+    "expectancy": -0.22
   },
   "bear": {
     "trades": 82,
