@@ -1,22 +1,21 @@
 {
-  "model_name": "System-B (4H+1H Guardian Pro)",
-  "capital": 53.29,
-  "current_price": 59107.3,
-  "last_updated": "2026-11-22 07:27 UTC",
+  "model_name": "System-B (10-Coin Arena Pro)",
+  "capital": 50.0,
+  "current_price": 60941.7,
+  "last_updated": "2026-11-22 22:19 UTC",
   "news_safe": true,
   "news_msg": "宏觀與鏈上新聞安全",
   "regime": "熊市 (Bear)",
   "last_signal": "WAIT",
   "plan_dir": "SHORT",
-  "entry_price": 59107.3,
-  "sl_price": 61146.4771,
-  "tp1_price": 56048.5344,
-  "tp2_price": 52989.7687,
-  "qty": 0.0004,
-  "margin_used": 7.88,
+  "entry_price": 60941.7,
+  "sl_price": 62519.7971,
+  "tp1_price": 58574.5543,
+  "tp2_price": 56207.4087,
+  "qty": 0.0006,
+  "margin_used": 12.19,
   "recommendations": [
-    "BTC 現價 $59,107.30 (熊市 (Bear)) -> 指令：WAIT",
-    "ETH 現價 $1,663.77 (熊市 (Bear)) -> 指令：WAIT | 停損 $1706.5546 / 止盈 $1535.4162",
-    "SOL 現價 $69.26 (熊市 (Bear)) -> 指令：WAIT | 停損 $71.4309 / 止盈 $62.7473"
+    "14天競賽當前淨值：$50.00 U (初始 50U) | 持倉數：0/2",
+    "全市場 10 大幣種掃描中，等待高勝率共振訊號"
   ]
 }
