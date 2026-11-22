@@ -3,7 +3,7 @@ name: Five-Layer Guardian System
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 * * * *'  # 改為每 1 小時整點收盤準時巡檢一次
+    - cron: '0 * * * *'
 
 permissions:
   contents: write
@@ -23,7 +23,10 @@ jobs:
       - name: 3. 安裝開源分析套件
         run: pip install -r requirements.txt
 
-      - name: 4. 執行系統 B 決策與競賽引擎 (4H+1H 雙週期)
+      - name: 4. 執行三幣種決策與 Telegram 推播引擎
+        env:
+          TG_TOKEN: ${{ secrets.TG_TOKEN }}
+          TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
         run: python guardian_engine.py
 
       - name: 5. 寫入永久記憶與交易日誌 (Auto-Save to GitHub)
@@ -31,4 +34,4 @@ jobs:
           git config --global user.name "Guardian-Bot"
           git config --global user.email "bot@://github.com"
           git add -A
-          git diff --quiet && git diff --staged --quiet || (git commit -m "🤖 Hourly 4H+1H scan & memory save" && git push)
+          git diff --quiet && git diff --staged --quiet || (git commit -m "🤖 Hourly BTC/ETH/SOL scan & TG alert" && git push)
