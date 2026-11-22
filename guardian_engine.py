@@ -4,9 +4,8 @@ import pandas as pd
 from datetime import datetime, timezone
 
 CFG = {
-    "NAME": "System-B (4H+1H Guardian Pro)", "SYM": "BTC/USDT", "CAP": 50.0,
-    "RISK": 0.015, "LEV": 3, "RR": 3.0, "ATR_M": 1.6, "FEE": 0.0005,
-    "MAX_STREAK": 3, "DAYS": 1500
+    "NAME": "System-B (4H+1H Guardian Pro)", "SYMBOLS": ["BTC/USDT", "ETH/USDT", "SOL/USDT"],
+    "CAP": 50.0, "RISK": 0.015, "LEV": 3, "RR": 3.0, "ATR_M": 1.6, "FEE": 0.0005, "DAYS": 1500
 }
 
 def send_tg(msg):
@@ -15,8 +14,8 @@ def send_tg(msg):
     if token and chat_id:
         try:
             requests.post(f"https://telegram.org{token}/sendMessage", json={"chat_id": chat_id, "text": msg}, timeout=10)
-        except Exception:
-            pass
+        except Exception as e:
+            print("TG 發送失敗:", e)
 
 def check_news():
     kws = ["fomc", "cpi", "powell", "rate hike", "war", "attack", "hack", "exploit", "bankruptcy", "sec", "whale dump"]
@@ -31,15 +30,15 @@ def check_news():
                 for k in kws:
                     if k in t:
                         return False, f"警報 [{k.upper()}]: {it.get('title')}"
-        return True, "宏觀與鏈上新聞安全（無重大突發利空）"
+        return True, "宏觀與鏈上新聞安全"
     except Exception:
-        return True, "新聞源備援通過（無重大突發警報）"
+        return True, "新聞源備援通過"
 
-def get_ohlcv(ex, tf, days):
+def get_ohlcv(ex, sym, tf, days):
     since = ex.milliseconds() - days * 86400000
     rows = []
     while since < ex.milliseconds():
-        b = ex.fetch_ohlcv(CFG["SYM"], timeframe=tf, since=since, limit=300)
+        b = ex.fetch_ohlcv(sym, timeframe=tf, since=since, limit=300)
         if not b: break
         rows.extend(b)
         since = b[-1][0] + 1
@@ -104,69 +103,73 @@ def simulate_range(bdf, init_cap):
                 curve.append({"timestamp": ts, "account_value": round(cap, 2), "System_B_Balance": round(cap, 2), "signal": "BUY" if is_l else "SELL"})
     return cap, mdd, curve, recs, (in_p, is_l, en, sl, tp1, tp2, q, be)
 
+def analyze_coin(ex, sym, nok, cap):
+    days = CFG["DAYS"] if sym == "BTC/USDT" else 45
+    df = add_ind(get_ohlcv(ex, sym, "1h", days), get_ohlcv(ex, sym, "4h", days))
+    lat = df.iloc[-1]
+    px = float(lat['close'])
+    is_bull = bool(lat['bull'])
+    p_sl = round(float((lat['sl'] - lat['atr']*CFG["ATR_M"]) if is_bull else (lat['sh'] + lat['atr']*CFG["ATR_M"])), 4)
+    dist = abs(px - p_sl) if abs(px - p_sl) > 0 else px * 0.02
+    rusd = round(cap * CFG["RISK"], 2)
+    qty = round(rusd / dist, 4)
+    mgn = round((qty * px) / CFG["LEV"], 2)
+    p_tp1 = round(px + (dist*1.5 if is_bull else -dist*1.5), 4)
+    p_tp2 = round(px + (dist*CFG["RR"] if is_bull else -dist*CFG["RR"]), 4)
+    sig = "LOCKED" if not nok else ("BUY" if lat['lsig'] else ("SELL" if lat['ssig'] else "WAIT"))
+    return df, {"sym": sym, "px": px, "regime": str(lat['regime']), "sig": sig, "sl": p_sl, "tp1": p_tp1, "tp2": p_tp2, "mgn": mgn, "qty": qty, "is_bull": is_bull, "adx": round(float(lat['adx']), 1)}
+
 def main():
     ex = ccxt.okx({'enableRateLimit': True})
     now_s = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     nok, nmsg = check_news()
-    bdf = add_ind(get_ohlcv(ex, "1h", CFG["DAYS"]), get_ohlcv(ex, "4h", CFG["DAYS"]))
 
-    # 1. 跑滿 4.1 年 (1500天) 跨牛熊總回測
-    cap_4y, mdd_4y, curve_4y, recs_4y, _ = simulate_range(bdf, CFG["CAP"])
-    pd.DataFrame(curve_4y).to_csv("system_b_backtest_curve.csv", index=False)
-    rdf = pd.DataFrame(recs_4y)
-    def sbox(sub):
-        if len(sub) == 0: return {"trades": 0, "win_rate": 0, "expectancy": 0}
-        w = sub[sub['r_mult'] > 0.1]; l = sub[sub['r_mult'] < -0.1]; vc = len(w) + len(l)
-        wr = round(len(w)/vc*100, 1) if vc > 0 else 0
-        aw = w['r_mult'].mean() if len(w) > 0 else 0; al = abs(l['r_mult'].mean()) if len(l) > 0 else 1
-        return {"trades": int(len(sub)), "win_rate": wr, "expectancy": round((wr/100)*aw - (1 - wr/100)*al, 2)}
-    ov = sbox(rdf)
-    summ = {"system": CFG["NAME"], "initial": CFG["CAP"], "final": round(cap_4y, 2), "return_pct": round((cap_4y - CFG["CAP"])/CFG["CAP"]*100, 2),
-            "win_rate": ov["win_rate"], "trades": ov["trades"], "expectancy": ov["expectancy"], "max_dd": round(mdd_4y, 2),
-            "bull": sbox(rdf[rdf['regime'] == '牛市 (Bull)']), "bear": sbox(rdf[rdf['regime'] == '熊市 (Bear)']), "range": sbox(rdf[rdf['regime'] == '震盪市 (Range)'])}
-    with open("system_b_backtest_summary.json", "w", encoding="utf-8") as f:
-        json.dump(summ, f, ensure_ascii=False, indent=2)
+    btc_df, btc_info = analyze_coin(ex, "BTC/USDT", nok, CFG["CAP"])
+    _, eth_info = analyze_coin(ex, "ETH/USDT", nok, CFG["CAP"])
+    _, sol_info = analyze_coin(ex, "SOL/USDT", nok, CFG["CAP"])
 
-    # 2. 用過去 30 天 (720 小時，含剛剛暴跌行情) 大量數據加速實測模擬盤
-    df_30d = bdf.tail(720).reset_index(drop=True)
-    cap_30d, _, curve_30d, _, pos_state = simulate_range(df_30d, CFG["CAP"])
+    cap_30d, _, curve_30d, _, pos_state = simulate_range(btc_df.tail(720).reset_index(drop=True), CFG["CAP"])
     if not curve_30d:
         curve_30d = [{"timestamp": now_s, "account_value": round(cap_30d, 2), "signal": "WAIT"}]
     pd.DataFrame(curve_30d).to_csv("system_b_live_curve.csv", index=False)
 
-    lat = bdf.iloc[-1]
-    px = float(lat['close'])
-    in_p, is_l, en, sl, tp1, tp2, q, be = pos_state
-    is_bull = bool(lat['bull'])
-    p_sl = round(float((lat['sl'] - lat['atr']*CFG["ATR_M"]) if is_bull else (lat['sh'] + lat['atr']*CFG["ATR_M"])), 2)
-    dist = abs(px - p_sl) if abs(px - p_sl) > 0 else px * 0.02
-    rusd = round(cap_30d * CFG["RISK"], 2)
-    qty = round(rusd / dist, 5)
-    mgn = round((qty * px) / CFG["LEV"], 2)
-    p_tp1 = round(px + (dist*1.5 if is_bull else -dist*1.5), 2)
-    p_tp2 = round(px + (dist*CFG["RR"] if is_bull else -dist*CFG["RR"]), 2)
+    if not os.path.exists("system_b_backtest_summary.json"):
+        cap_4y, mdd_4y, curve_4y, recs_4y, _ = simulate_range(btc_df, CFG["CAP"])
+        pd.DataFrame(curve_4y).to_csv("system_b_backtest_curve.csv", index=False)
+        rdf = pd.DataFrame(recs_4y)
+        def sbox(sub):
+            if len(sub) == 0: return {"trades": 0, "win_rate": 0, "expectancy": 0}
+            w = sub[sub['r_mult'] > 0.1]; l = sub[sub['r_mult'] < -0.1]; vc = len(w) + len(l)
+            wr = round(len(w)/vc*100, 1) if vc > 0 else 0
+            aw = w['r_mult'].mean() if len(w) > 0 else 0; al = abs(l['r_mult'].mean()) if len(l) > 0 else 1
+            return {"trades": int(len(sub)), "win_rate": wr, "expectancy": round((wr/100)*aw - (1 - wr/100)*al, 2)}
+        ov = sbox(rdf)
+        summ = {"system": CFG["NAME"], "initial": CFG["CAP"], "final": round(cap_4y, 2), "return_pct": round((cap_4y - CFG["CAP"])/CFG["CAP"]*100, 2),
+                "win_rate": ov["win_rate"], "trades": ov["trades"], "expectancy": ov["expectancy"], "max_dd": round(mdd_4y, 2),
+                "bull": sbox(rdf[rdf['regime'] == '牛市 (Bull)']), "bear": sbox(rdf[rdf['regime'] == '熊市 (Bear)']), "range": sbox(rdf[rdf['regime'] == '震盪市 (Range)'])}
+        with open("system_b_backtest_summary.json", "w", encoding="utf-8") as f:
+            json.dump(summ, f, ensure_ascii=False, indent=2)
 
-    sig_now = ("BUY" if is_l else "SELL") if in_p else ("LOCKED" if not nok else "WAIT")
     st = {
-        "model_name": CFG["NAME"], "capital": round(cap_30d, 2), "current_price": px,
-        "last_updated": now_s, "news_safe": nok, "news_msg": nmsg, "regime": str(lat['regime']),
-        "in_position": in_p, "pos_type": ("LONG" if is_l else "SHORT") if in_p else None,
-        "last_signal": sig_now,
-        "plan_dir": ("LONG" if is_l else "SHORT") if in_p else ("LONG" if is_bull else "SHORT"),
-        "entry_price": round(en, 2) if in_p else px, "sl_price": round(sl, 2) if in_p else p_sl,
-        "tp1_price": round(tp1, 2) if in_p else p_tp1, "tp2_price": round(tp2, 2) if in_p else p_tp2,
-        "qty": round(q, 5) if in_p else qty, "margin_used": round((q * en) / CFG["LEV"], 2) if in_p else mgn,
+        "model_name": CFG["NAME"], "capital": round(cap_30d, 2), "current_price": btc_info["px"],
+        "last_updated": now_s, "news_safe": nok, "news_msg": nmsg, "regime": btc_info["regime"],
+        "last_signal": btc_info["sig"], "plan_dir": "LONG" if btc_info["is_bull"] else "SHORT",
+        "entry_price": btc_info["px"], "sl_price": btc_info["sl"], "tp1_price": btc_info["tp1"], "tp2_price": btc_info["tp2"],
+        "qty": btc_info["qty"], "margin_used": btc_info["mgn"],
         "recommendations": [
-            f"近 30 天（720 小時大量數據實測，含剛剛暴跌行情）模擬盤淨值：50.00 U -> {cap_30d:.2f} U",
-            f"當前市價 ${px:,.2f}，處於【{lat['regime']}】，趨勢強度 ADX={lat['adx']:.1f}",
-            f"目前狀態：{sig_now}（若顯示 BUY/SELL 代表剛剛已進場持倉；若顯示 WAIT 請耐心等待）"
+            f"BTC 現價 ${btc_info['px']:,.2f} ({btc_info['regime']}) -> 指令：{btc_info['sig']}",
+            f"ETH 現價 ${eth_info['px']:,.2f} ({eth_info['regime']}) -> 指令：{eth_info['sig']} | 停損 ${eth_info['sl']} / 止盈 ${eth_info['tp2']}",
+            f"SOL 現價 ${sol_info['px']:,.2f} ({sol_info['regime']}) -> 指令：{sol_info['sig']} | 停損 ${sol_info['sl']} / 止盈 ${sol_info['tp2']}"
         ]
     }
     with open("system_b_state.json", "w", encoding="utf-8") as f:
         json.dump(st, f, ensure_ascii=False, indent=2)
 
-    if sig_now in ["BUY", "SELL"]:
-        send_tg(f"🚨 System-B 訊號觸發：{sig_now}\n市價：${px:,.2f}\n進場：${st['entry_price']}\n停損：${st['sl_price']}\n止盈：${st['tp2_price']}\n3x保證金：${st['margin_used']} U")
+    lines = [f"🛡️ System-B 三幣種戰情快報 ({now_s})", f"📰 新聞濾網：{'🟢 安全' if nok else '🔴 鎖倉'} ({nmsg})\n"]
+    for info in [btc_info, eth_info, sol_info]:
+        icon = "🟢" if info["sig"] == "BUY" else ("🔴" if info["sig"] == "SELL" else "⏸️")
+        lines.append(f"{icon} {info['sym']} | 現價: ${info['px']:,.2f}\n   狀態: {info['regime']} | 指令: {info['sig']}\n   3x保證金: ${info['mgn']} U | SL: ${info['sl']} | TP2: ${info['tp2']}\n")
+    send_tg("\n".join(lines))
 
 if __name__ == "__main__":
     main()
