@@ -9,11 +9,13 @@ CFG = {
 }
 
 def send_tg(msg):
-    token = os.environ.get("TG_TOKEN", "")
-    chat_id = os.environ.get("TG_CHAT_ID", "")
+    token = os.environ.get("TG_TOKEN", "").strip()
+    chat_id = os.environ.get("TG_CHAT_ID", "").strip()
     if token and chat_id:
         try:
-            requests.post(f"https://telegram.org{token}/sendMessage", json={"chat_id": chat_id, "text": msg}, timeout=10)
+            host = "api." + "telegram.org"
+            res = requests.post(f"https://{host}/bot{token}/sendMessage", json={"chat_id": chat_id, "text": msg}, timeout=10)
+            print("TG 回傳狀態:", res.status_code, res.text)
         except Exception as e:
             print("TG 發送失敗:", e)
 
