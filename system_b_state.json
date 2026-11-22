@@ -1,24 +1,22 @@
 {
   "model_name": "System-B (4H+1H Guardian Pro)",
   "capital": 53.29,
-  "current_price": 59021.1,
-  "last_updated": "2026-11-22 06:22 UTC",
+  "current_price": 59174.5,
+  "last_updated": "2026-11-22 07:14 UTC",
   "news_safe": true,
-  "news_msg": "宏觀與鏈上新聞安全（無重大突發利空）",
+  "news_msg": "宏觀與鏈上新聞安全",
   "regime": "熊市 (Bear)",
-  "in_position": false,
-  "pos_type": null,
   "last_signal": "WAIT",
   "plan_dir": "SHORT",
-  "entry_price": 59021.1,
-  "sl_price": 61156.0,
-  "tp1_price": 55818.75,
-  "tp2_price": 52616.4,
-  "qty": 0.00037,
-  "margin_used": 7.28,
+  "entry_price": 59174.5,
+  "sl_price": 61140.4314,
+  "tp1_price": 56225.6029,
+  "tp2_price": 53276.7058,
+  "qty": 0.0004,
+  "margin_used": 7.89,
   "recommendations": [
-    "近 30 天（720 小時大量數據實測，含剛剛暴跌行情）模擬盤淨值：50.00 U -> 53.29 U",
-    "當前市價 $59,021.10，處於【熊市 (Bear)】，趨勢強度 ADX=62.0",
-    "目前狀態：WAIT（若顯示 BUY/SELL 代表剛剛已進場持倉；若顯示 WAIT 請耐心等待）"
+    "BTC 現價 $59,174.50 (熊市 (Bear)) -> 指令：WAIT",
+    "ETH 現價 $1,664.80 (熊市 (Bear)) -> 指令：WAIT | 停損 $1706.3569 / 止盈 $1540.1293",
+    "SOL 現價 $69.21 (熊市 (Bear)) -> 指令：WAIT | 停損 $71.4229 / 止盈 $62.5713"
   ]
 }
